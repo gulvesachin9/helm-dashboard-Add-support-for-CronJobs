@@ -1,0 +1,19 @@
+apiVersion: v2
+name: helm-dash
+version: 0.1.15
+description: A simple K8s dashboard showing only our custom, Helm installed, apps
+keywords:
+- degiro
+- dashboard
+- information-radiator
+- deploy-info
+maintainers:
+- name: The RIGID Squad
+  email: squad-rigid@flatexdegiro.com
+
+dependencies:
+- name: degiro-base-app
+  version: 3.4.14
+  repository: '@dev-charts'
+  alias: helm-dash
+  condition: helm-dash.enabled

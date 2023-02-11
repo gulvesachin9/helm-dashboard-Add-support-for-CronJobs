@@ -1,0 +1,38 @@
+---
+global:
+  chartName: helm-dash
+  app:
+    metadata:
+      tier: infra
+      capability: dashboard
+    image:
+      registry: docker-hub.internal.degiro.eu
+      tag: 0.1.14
+  ingress:
+    pathType: front-end
+
+helm-dash:
+  serviceAccountName: api-service-account
+  app:
+    name: helm-dash
+    image:
+      repository: helm-dash
+      tag: 0.1.14
+    resources:
+      memory:
+        nonHeap: 512
+        containerReserve: 256
+      cpu:
+        minShares: 400
+        maxShares: 2200
+    ports:
+      - name: http
+        port: 5000
+  service:
+    targetPort: 5000
+  startupProbe:
+    enabled: false
+  readinessProbe:
+    enabled: false
+  livenessProbe:
+    enabled: false

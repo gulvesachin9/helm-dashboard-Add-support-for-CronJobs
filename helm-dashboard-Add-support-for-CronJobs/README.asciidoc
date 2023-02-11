@@ -1,0 +1,26 @@
+# Purpose
+
+This is a very naive implementation of a K8s Dashboard that shows installed Helm releases with some details like their version and the connected ingress definition.
+It is a Python application based on Flask and it processes the output of the `helm` and `kubectl` CLI tools.
+
+## Usage
+
+Build the container image from the `Dockerfile`, for example like this:
+
+```shell
+docker build --tag helm-dash:1.0 .
+```
+
+Create a dedicated `kubeconfig` file that only holds info about the cluster you want to show info for and make sure that its single `context` is the active one.
+
+Now you can run the container image like this (note that you’ll need to bind-mount that dedicated `kubeconfig` file; here we named it simply `config` and placed it in the current directory):
+
+```shell
+docker run --detach --rm \
+  --publish 8080:5000 \
+  --volume $(pwd)/config:/root/.kube/config \
+  --name helm-dash \
+  helm-dash:1.0
+```
+
+You should then be able to access it from http://localhost:8080/.

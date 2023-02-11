@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Helm Dash</title>
+    <link rel="icon" href="{{ base_url }}favicon-152.png" type="image/x-icon">
+    <style class="css">
+    body {
+        font-family: 'Liberation Sans', sans-serif;
+        margin: 10px auto;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: space-around;
+    }
+
+    th {
+        text-align: left;
+        background-color: rgb(255, 240, 190);
+    }
+    th > a {
+        display: block;
+        cursor: n-resize;
+    }
+    th > a.asc {
+        cursor: s-resize;
+    }
+    th > a.desc {
+        cursor: n-resize;
+    }
+    th > a.sort.asc::after {
+        content: "\002B06";
+        padding-left: 3px;
+    }
+    th > a.sort.desc::after {
+        content: "\002B07";
+        padding-left: 3px;
+    }
+
+    td,
+    th {
+        padding: .2em .4em;
+    }
+
+    td:nth-child(odd) {
+        background-color: rgb(190, 220, 245);
+    }
+
+    tr:nth-child(odd) > td:nth-child(even) {
+        background-color: rgb(200, 210, 255);
+    }
+
+    tr:nth-child(odd) > td:nth-child(odd) {
+        background-color: rgb(210, 220, 245);
+    }
+
+    table {
+        background-color: rgb(180, 200, 245);
+        font-size: large;
+        width: 100%;
+        border-spacing: 0;
+    }
+
+    ul {
+        margin: 0;
+        padding-left: .1em
+    }
+    li {
+        list-style: none;
+    }
+
+    label {
+        font-weight: bold;
+        margin-left: 4px;
+    }
+    input {
+        margin-bottom: 1em;
+    }
+    </style>
+    <script>
+        var searchValue = '';
+        var sortKey = '';
+        var sortDir = '';
+        setInterval(function(event) {
+            window.location.search = 'search=' + searchValue + '&sortKey=' + sortKey + '&sortDir=' + sortDir;
+        }, 60000);
+    </script>
+</head>
+<body>
+<h1>Helm Dash</h1>
+<div id="releases">
+    <label>Filter: </label>
+    <input class="fuzzy-search" type="search" placeholder="Filter over all columns" autofocus/>
+    <table>
+        <thead>
+        <tr>
+            <th>
+                <a class="sort" data-sort="name">Application</a>
+            </th>
+            <th>
+                <a class="sort" data-sort="kind">Type</a>
+            </th>
+            <th>
+                <a class="sort" data-sort="image-repo">Image</a>
+            </th>
+            <th>
+                <a class="sort" data-sort="image-version">Version (Chart)</a>
+            </th>
+            <th>
+                <a class="sort" data-sort="namespace">Namespace</a>
+            </th>
+            <th>
+                Ingress
+            </th>
+            <th>
+                <a class="sort asc" data-sort="status">Status</a>
+            </th>
+            <th>
+                <a class="sort" data-sort="updated">Updated</a>
+            </th>
+        </tr>
+        </thead>
+        <tbody class="list">
+        {%- for release in helm_list | sort(attribute='status') %}
+        <tr>
+            <td class="name">{{ release.name | truncate(20, True) }}</td>
+            <td class="type">{{ release.type | truncate(20, True) }}</td>
+            <td class="image-repo">{{ release.image_repository }}</td>
+            <td class="image-version"><strong>{{ release.image_version | default('-', true) | truncate(20, True)
+                }}</strong> ({{ release.chart | replace(release.name + '-', '') | truncate(40, True) }})
+            </td>
+            <td class="namespace">{{ release.namespace }}</td>
+            <td>
+                <ul>{% for path in release.ingress %}
+                    <li><a href="https://{{ path | default('example.com') }}">{{ path | default('-') }}</a></li>
+                    {% endfor %}
+                </ul>
+            </td>
+            <td class="status">{{ release.status }}</td>
+            <td class="updated">{{ release.updated }}</td>
+        </tr>
+        {%- endfor %}
+        </tbody>
+    </table>
+</div>
+<!-- Source: https://listjs.com/ -->
+<script src="{{ base_url }}list.min.js"></script>
+<script>
+        let listOptions = {
+            valueNames: ['name', 'type', 'image-repo', 'image-version', 'namespace', 'status', 'updated']
+        };
+
+        var releasesList = new List('releases', listOptions);
+
+        // Add our own listener to dispatch a 'keyup' event to the search field when the ‘clear cross’ of the input
+        // is used
+        document.getElementsByClassName('fuzzy-search')[0].addEventListener('input', function() {
+            if (this.value === '') {
+                document.getElementsByClassName('fuzzy-search')[0].dispatchEvent(new Event('keyup'));
+            }
+        }, { capture: false, passive: true });
+
+        releasesList.on('searchComplete', function(something) {
+            searchValue = document.getElementsByClassName('fuzzy-search')[0].value;
+        });
+
+        releasesList.on('sortComplete', function(something) {
+            let sortedElement = (document.getElementsByClassName('asc').length > 0 ? document.getElementsByClassName('asc') : document.getElementsByClassName('desc'))[0];
+            if (sortedElement) {
+                sortKey = sortedElement.dataset['sort'];
+                sortDir = sortedElement.classList[1];
+            }
+        });
+
+        let params = new URLSearchParams(window.location.search);
+        searchValue = params.get('search') || '';
+        sortKey = params.get('sortKey') || '';
+        sortDir = params.get('sortDir') || '';
+
+        if (searchValue) {
+            document.getElementsByClassName('fuzzy-search')[0].value = searchValue;
+            document.getElementsByClassName('fuzzy-search')[0].dispatchEvent(new Event('keyup'));
+        }
+        if (sortKey) {
+            let sortElements = document.getElementsByClassName('sort');
+            for (let index = 0; index < sortElements.length; index++) {
+                if (sortElements[index].dataset['sort'] == sortKey) {
+                    sortElements[index].dispatchEvent(new Event('click'));
+                    if (sortDir === 'desc') {
+                        sortElements[index].dispatchEvent(new Event('click'));
+                    }
+                    break;
+                }
+            }
+        }
+</script>
+</body>
+</html>

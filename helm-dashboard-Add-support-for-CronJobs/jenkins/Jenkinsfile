@@ -1,0 +1,7 @@
+Map parameters = [
+    'buildSettings': [
+        'branchRelease': true,
+        'autoDeployNamespace': ''
+    ]
+]
+runSharedBuild(parameters)
